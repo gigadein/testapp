@@ -1,2 +1,1 @@
-pip install numpy matplotlib scipy spstreamlit
-from scipy import signal
+pip install numpy matplotlib control spstreamlit
