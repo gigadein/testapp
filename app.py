@@ -1,99 +1,57 @@
-import streamlit as st
-
-# 애플리케이션 제목
-st.title("애플리케이션 제목")
-
-# 페이지 제목
-st.header("페이지 제목")
-# 페이지 소제목
-st.subheader("페이지 소제목")
-# 텍스트
-st.text("텍스트")
-
-# 이미지
-from PIL import Image
-image = Image.open('image.png')
-st.image(image, caption='이미지 캡션')
-
-# 데이터프레임
-import pandas as pd
-df = pd.read_csv('data.csv')
-st.dataframe(df)
-
-# 차트
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-fig, ax = plt.subplots()
-sns.histplot(df['column'], ax=ax)
-st.pyplot(fig)
-# 입력
-input_text = st.text_input("텍스트 입력", "기본값")
+import control
+import streamlit as st
+from io import BytesIO
 
-# 버튼
-if st.button('버튼'):
-    # 버튼을 클릭하면 실행될 코드
+def main():
+    # 전달함수 정의
+    G = control.TransferFunction([100], [1, 5, 106])
 
-# 체크박스
-if st.checkbox('체크박스'):
-    # 체크박스를 클릭하면 실행될 코드
+    # 폐루프 전달함수 계산
+    T = G / (1 + G)
 
-# 라디오 버튼
-radio_button = st.radio("라디오 버튼", ('옵션 1', '옵션 2', '옵션 3'))
+    # 시뮬레이션 설정
+    t = np.linspace(0, 10, 1000)  # 시간 범위 설정
+    t, y = control.step_response(T, T=t)  # unit step 입력에 대한 응답곡선 계산
 
-# 셀렉트 박스
-select_box = st.selectbox("셀렉트 박스", ['옵션 1', '옵션 2', '옵션 3'])
+    # 응답곡선 그리기
+    fig1, ax1 = plt.subplots()
+    ax1.plot(t, y)
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Response')
+    ax1.set_title('Step Response')
+    ax1.grid(True)
 
-# 멀티 셀렉트 박스
-multi_select_box = st.multiselect("멀티 셀렉트 박스", ['옵션 1', '옵션 2', '옵션 3'])
+    # 주파수 응답 그리기
+    fig2, (ax2, ax3) = plt.subplots(2, 1)
+    control.bode_plot(T, dB=True, plot=False)
+    mag, phase, omega = control.bode_plot(T, dB=True, plot=False)
 
-# 슬라이더
-slider = st.slider("슬라이더", min_value=0, max_value=10, value=5, step=1)
+    ax2.semilogx(omega, mag)
+    ax2.set_xlabel('Frequency [rad/s]')
+    ax2.set_ylabel('Magnitude [dB]')
+    ax2.set_title('Bode Plot - Magnitude')
+    ax2.grid(True)
 
-# 날짜 선택
-date = st.date_input("날짜 선택")
+    ax3.semilogx(omega, phase)
+    ax3.set_xlabel('Frequency [rad/s]')
+    ax3.set_ylabel('Phase [degrees]')
+    ax3.set_title('Bode Plot - Phase')
+    ax3.grid(True)
 
-# 시간 선택
-time = st.time_input("시간 선택")
-파일 업로드
-uploaded_file = st.file_uploader("파일 업로드")
+    # 그래프를 이미지로 변환하여 Streamlit에 표시
+    fig1_data = fig_to_data(fig1)
+    fig2_data = fig_to_data(fig2)
 
-페이지 간 구분
-st.write("---")
+    st.image(fig1_data)
+    st.image(fig2_data)
 
-링크
-st.markdown("[링크 텍스트](링크 URL)")
+def fig_to_data(fig):
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    return buf
 
-블록
-with st.beta_expander("블록 제목"):
-# 블록 내용
-st.write("블록 내용")
-
-사이드바
-st.sidebar.header("사이드바 제목")
-
-사이드바 입력
-sidebar_input_text = st.sidebar.text_input("사이드바 입력", "기본값")
-
-사이드바 체크박스
-if st.sidebar.checkbox('사이드바 체크박스'):
-# 사이드바 체크박스를 클릭하면 실행될 코드
-사이드바 라디오 버튼
-sidebar_radio_button = st.sidebar.radio("사이드바 라디오 버튼", ('옵션 1', '옵션 2', '옵션 3'))
-
-사이드바 셀렉트 박스
-sidebar_select_box = st.sidebar.selectbox("사이드바 셀렉트 박스", ['옵션 1', '옵션 2', '옵션 3'])
-
-사이드바 멀티 셀렉트 박스
-sidebar_multi_select_box = st.sidebar.multiselect("사이드바 멀티 셀렉트 박스", ['옵션 1', '옵션 2', '옵션 3'])
-
-사이드바 슬라이더
-sidebar_slider = st.sidebar.slider("사이드바 슬라이더", min_value=0, max_value=10, value=5, step=1)
-
-사이드바 날짜 선택
-sidebar_date = st.sidebar.date_input("사이드바 날짜 선택")
-
-사이드바 시간 선택
-sidebar_time = st.sidebar.time_input("사이드바 시간 선택")
-
-사이드바 파일 업로드
-sidebar_uploaded_file = st.sidebar.file_uploader("사이드바 파일 업로드")
+if __name__ == '__main__':
+    main()
